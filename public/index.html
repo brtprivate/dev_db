@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MongoDB Web GUI</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Accessibility Announcements -->
+    <div id="aria-live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <div id="aria-live-region-assertive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+    <!-- Skip Navigation -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div id="keyboardShortcutsModal" class="modal hidden" role="dialog" aria-labelledby="shortcuts-title"
+        aria-describedby="shortcuts-description">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="shortcuts-title"><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h2>
+                <button class="modal-close" aria-label="Close keyboard shortcuts dialog">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="shortcuts-description">
+                <div class="shortcuts-grid">
+                    <div class="shortcuts-section">
+                        <h3>Navigation</h3>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd>
+                            <span>Previous/Next page</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>Home</kbd> / <kbd>End</kbd>
+                            <span>First/Last page</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Tab</kbd> / <kbd>Shift</kbd> + <kbd>Tab</kbd>
+                            <span>Navigate between elements</span>
+                        </div>
+                    </div>
+                    <div class="shortcuts-section">
+                        <h3>Search & Query</h3>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>F</kbd>
+                            <span>Open search</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+                            <span>Execute query</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>S</kbd>
+                            <span>Save current query</span>
+                        </div>
+                    </div>
+                    <div class="shortcuts-section">
+                        <h3>Document Actions</h3>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>C</kbd>
+                            <span>Copy document JSON</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Enter</kbd>
+                            <span>View document in modal</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Escape</kbd>
+                            <span>Close modal/panel</span>
+                        </div>
+                    </div>
+                    <div class="shortcuts-section">
+                        <h3>General</h3>
+                        <div class="shortcut-item">
+                            <kbd>?</kbd>
+                            <span>Show this help</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>R</kbd>
+                            <span>Refresh data</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Alt</kbd> + <kbd>1-4</kbd>
+                            <span>Switch query tabs</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="accessibilityManager.hideKeyboardShortcuts()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal hidden">
+        <div class="modal-content login-modal-content">
+            <div class="login-container">
+                <div class="login-header">
+                    <div class="login-logo">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h1 class="login-title">MongoDB Web GUI</h1>
+                    <p class="login-subtitle">Connect to your MongoDB database</p>
+                </div>
+                
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user"></i> Username
+                        </label>
+                        <input type="text" id="username" class="form-input" placeholder="Enter your username" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="connectionString" class="form-label">
+                            <i class="fas fa-link"></i> Connection String
+                        </label>
+                        <input type="text" id="connectionString" class="form-input" 
+                               placeholder="mongodb://username:password@localhost:27017/database_name" required>
+                        <div class="connection-help">
+                            <button type="button" class="help-toggle" onclick="toggleConnectionHelp()">
+                                <i class="fas fa-question-circle"></i> Connection Help
+                            </button>
+                            
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-checkbox remember-me">
+                            <input type="checkbox" id="rememberMe" checked>
+                            <span class="checkmark"></span>
+                            <span class="checkbox-text">
+                                <i class="fas fa-save"></i> Remember connection details
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-login">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Connect to Database</span>
+                        <div class="btn-loading hidden">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </button>
+                </form>
+                
+                <div class="login-footer">
+                    <p class="security-note">
+                        <i class="fas fa-shield-alt"></i>
+                        Your credentials are encrypted and stored securely
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="hidden" role="application" aria-label="MongoDB Web GUI">
+        <!-- Header -->
+        <header class="header" role="banner">
+            <div class="header-left">
+                <div class="header-brand">
+                    <div class="header-brand-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="header-brand-text">
+                        <h1>MongoDB Web GUI</h1>
+                        <div id="connectionStatus" class="status-indicator" role="status" aria-live="polite">
+                            <i class="fas fa-circle" aria-hidden="true"></i> Connected
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="refreshBtn" class="btn btn-secondary">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button id="logoutBtn" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar" role="navigation" aria-label="Database navigation">
+                <div class="sidebar-header">
+                    <h2 class="sidebar-title">
+                        <i class="fas fa-database"></i>
+                        <span>Databases</span>
+                    </h2>
+                    <div class="sidebar-actions">
+                        <button class="sidebar-toggle" title="Collapse sidebar">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="sidebar-content">
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-header">
+                            <h3 class="sidebar-section-title">
+                                <i class="fas fa-database"></i>
+                                <span>Available Databases</span>
+                                <span id="databaseCount" class="database-count">0</span>
+                            </h3>
+                            <div class="sidebar-section-actions">
+                                <button class="btn-icon" title="Refresh databases" onclick="loadDatabases()">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="databasesList" class="tree-view" role="tree" aria-label="Database and collection tree">
+                            <!-- Databases will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <!-- <main id="main-content" class="content" role="main" aria-label="Document viewer and query interface"></main> -->
+            <div id="welcomeScreen" class="welcome-screen">
+                <div class="welcome-content">
+                    <i class="fas fa-database fa-4x"></i>
+                    <h2>Welcome to MongoDB Web GUI</h2>
+                    <p>Select a database and collection to start exploring your MongoDB data.</p>
+                    <div class="features">
+                        <div class="feature">
+                            <i class="fas fa-list"></i>
+                            <span>Browse Collections</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-eye"></i>
+                            <span>View Documents</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-search"></i>
+                            <span>Query Data</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Read-Only Access</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collection View -->
+            <div id="collectionView" class="hidden">
+                <div class="collection-header">
+                    <h2 id="collectionTitle">Collection: <span id="collectionName"></span></h2>
+                    <div class="collection-actions">
+                        <span class="read-only-badge">
+                            <i class="fas fa-eye"></i> Read-Only Mode
+                        </span>
+                        <div class="export-buttons">
+                            <button id="exportJsonBtn" class="btn btn-success">
+                                <i class="fas fa-download"></i> Export JSON
+                            </button>
+                            <button id="exportCsvBtn" class="btn btn-success">
+                                <i class="fas fa-file-csv"></i> Export CSV
+                            </button>
+                        </div>
+                        <button id="queryBtn" class="btn btn-secondary">
+                            <i class="fas fa-search"></i> Query
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Advanced Search and Query Panel -->
+                <div id="queryPanel" class="query-panel hidden">
+                    <div class="query-panel-header">
+                        <h3><i class="fas fa-search"></i> Advanced Search & Query</h3>
+                        <div class="query-panel-tabs">
+                            <button id="simpleSearchTab" class="query-tab active" data-tab="simple">
+                                <i class="fas fa-search"></i> Simple Search
+                            </button>
+                            <button id="queryBuilderTab" class="query-tab" data-tab="builder">
+                                <i class="fas fa-tools"></i> Query Builder
+                            </button>
+                            <button id="rawQueryTab" class="query-tab" data-tab="raw">
+                                <i class="fas fa-code"></i> Raw Query
+                            </button>
+                            <button id="savedQueriesTab" class="query-tab" data-tab="saved">
+                                <i class="fas fa-bookmark"></i> Saved
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Simple Search Tab -->
+                    <div id="simpleSearchContent" class="query-tab-content active">
+                        <div class="simple-search-form">
+                            <div class="search-input-group">
+                                <input type="text" id="simpleSearchInput" class="form-input"
+                                    placeholder="Search in all fields...">
+                                <button id="simpleSearchBtn" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                            <div class="search-filters">
+                                <div class="filter-group">
+                                    <label>Search in:</label>
+                                    <select id="searchFieldSelect" class="form-select">
+                                        <option value="">All fields</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label>Match type:</label>
+                                    <select id="matchTypeSelect" class="form-select">
+                                        <option value="contains">Contains</option>
+                                        <option value="exact">Exact match</option>
+                                        <option value="starts">Starts with</option>
+                                        <option value="ends">Ends with</option>
+                                        <option value="regex">Regular expression</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" id="caseSensitiveCheck">
+                                        <span>Case sensitive</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Query Builder Tab -->
+                    <div id="queryBuilderContent" class="query-tab-content">
+                        <div class="query-builder">
+                            <div class="query-builder-header">
+                                <button id="addConditionBtn" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-plus"></i> Add Condition
+                                </button>
+                                <button id="clearConditionsBtn" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-trash"></i> Clear All
+                                </button>
+                            </div>
+                            <div id="queryConditions" class="query-conditions">
+                                <!-- Conditions will be added here dynamically -->
+                            </div>
+                            <div class="query-builder-preview">
+                                <label>Generated Query:</label>
+                                <pre id="generatedQuery" class="language-json"><code>{}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Raw Query Tab -->
+                    <div id="rawQueryContent" class="query-tab-content">
+                        <div class="raw-query-form">
+                            <div class="form-group">
+                                <label for="queryOperation">Operation:</label>
+                                <select id="queryOperation" class="form-select">
+                                    <option value="find">Find Documents</option>
+                                    <option value="aggregate">Aggregate Pipeline</option>
+                                    <option value="count">Count Documents</option>
+                                    <option value="distinct">Distinct Values</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="queryText">Query (JSON):</label>
+                                <textarea id="queryText" class="form-textarea" placeholder='{"field": "value"}'
+                                    rows="8"></textarea>
+                            </div>
+                            <div class="query-examples">
+                                <h4>Examples:</h4>
+                                <div class="example-queries">
+                                    <button class="btn btn-xs btn-secondary"
+                                        onclick="setQueryExample('find', '{}')">Find All</button>
+                                    <button class="btn btn-xs btn-secondary"
+                                        onclick="setQueryExample('find', '{&quot;name&quot;: &quot;John&quot;}')">Find
+                                        by Name</button>
+                                    <button class="btn btn-xs btn-secondary"
+                                        onclick="setQueryExample('count', '{&quot;status&quot;: &quot;active&quot;}')">Count
+                                        Active</button>
+                                    <button class="btn btn-xs btn-secondary"
+                                        onclick="setQueryExample('aggregate', '[{&quot;$group&quot;: {&quot;_id&quot;: &quot;$category&quot;, &quot;count&quot;: {&quot;$sum&quot;: 1}}}]')">Group
+                                        by Category</button>
+                                    <button class="btn btn-xs btn-secondary"
+                                        onclick="setQueryExample('distinct', '&quot;category&quot;')">Distinct
+                                        Categories</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Saved Queries Tab -->
+                    <div id="savedQueriesContent" class="query-tab-content">
+                        <div class="saved-queries">
+                            <div class="saved-queries-header">
+                                <h4>Saved Queries</h4>
+                                <button id="saveCurrentQueryBtn" class="btn btn-sm btn-success">
+                                    <i class="fas fa-save"></i> Save Current
+                                </button>
+                            </div>
+                            <div id="savedQueriesList" class="saved-queries-list">
+                                <!-- Saved queries will be loaded here -->
+                            </div>
+                            <div class="query-history">
+                                <h4>Recent Queries</h4>
+                                <div id="queryHistoryList" class="query-history-list">
+                                    <!-- Query history will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Query Panel Actions -->
+                    <div class="query-panel-actions">
+                        <button id="executeQueryBtn" class="btn btn-primary">
+                            <i class="fas fa-play"></i> Execute Query
+                        </button>
+                        <button id="exportQueryResultsBtn" class="btn btn-info">
+                            <i class="fas fa-download"></i> Export Results
+                        </button>
+                        <button id="closeQueryBtn" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Documents Table -->
+                <div class="documents-container">
+                    <div class="documents-header">
+                        <div class="pagination-info">
+                            <span id="paginationInfo">Showing 0 documents</span>
+                            <div class="pagination-settings">
+                                <label for="pageSizeSelect">Per page:</label>
+                                <select id="pageSizeSelect" class="form-select form-select-sm">
+                                    <option value="25">25</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                    <option value="200">200</option>
+                                    <option value="500">500</option>
+                                </select>
+                            </div>
+                            <div class="view-mode-toggle">
+                                <button id="paginationModeBtn" class="btn btn-xs btn-secondary"
+                                    title="Switch to infinite scroll">
+                                    <i class="fas fa-list"></i> Pagination
+                                </button>
+                                <button id="virtualScrollModeBtn" class="btn btn-xs btn-secondary"
+                                    title="Switch to virtual scrolling">
+                                    <i class="fas fa-arrows-alt-v"></i> Virtual
+                                </button>
+                            </div>
+                        </div>
+                        <div class="pagination-controls">
+                            <button id="firstPageBtn" class="btn btn-sm" disabled title="First page">
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                            <button id="prevPageBtn" class="btn btn-sm" disabled title="Previous page">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div class="page-jump">
+                                <input type="number" id="pageJumpInput" class="form-input form-input-sm" min="1"
+                                    placeholder="Page">
+                                <button id="pageJumpBtn" class="btn btn-sm btn-primary">Go</button>
+                            </div>
+                            <span id="pageInfo">Page 1 of 1</span>
+                            <button id="nextPageBtn" class="btn btn-sm" disabled title="Next page">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <button id="lastPageBtn" class="btn btn-sm" disabled title="Last page">
+                                <i class="fas fa-angle-double-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pagination Mode -->
+                    <div id="paginationContainer" class="table-container">
+                        <table id="documentsTable" class="documents-table">
+                            <thead>
+                                <tr>
+                                    <th>Document</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documentsTableBody">
+                                <!-- Documents will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Virtual Scroll Mode -->
+                    <div id="virtualScrollContainer" class="virtual-scroll-container hidden">
+                        <div class="virtual-scroll-header">
+                            <div class="virtual-scroll-column">Document</div>
+                            <div class="virtual-scroll-column">Actions</div>
+                        </div>
+                        <div id="virtualScrollViewport" class="virtual-scroll-viewport">
+                            <div id="virtualScrollContent" class="virtual-scroll-content">
+                                <!-- Virtual scroll items will be rendered here -->
+                            </div>
+                        </div>
+                        <div id="loadMoreContainer" class="load-more-container hidden">
+                            <button id="loadMoreBtn" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Load More Documents
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Document Modal -->
+    <div id="documentModal" class="modal hidden">
+        <div class="modal-content modal-xl">
+            <div class="modal-header">
+                <h2 id="documentModalTitle"><i class="fas fa-file-code"></i> Document Viewer</h2>
+                <button id="closeDocumentModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="json-viewer-container">
+                    <div class="json-viewer-toolbar">
+                        <div class="json-viewer-actions">
+                            <button id="copyJsonBtn" class="btn btn-sm btn-secondary" title="Copy to clipboard">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                            <button id="expandAllBtn" class="btn btn-sm btn-secondary" title="Expand all sections">
+                                <i class="fas fa-expand-arrows-alt"></i> Expand All
+                            </button>
+                            <button id="collapseAllBtn" class="btn btn-sm btn-secondary" title="Collapse all sections">
+                                <i class="fas fa-compress-arrows-alt"></i> Collapse All
+                            </button>
+                            <button id="searchInJsonBtn" class="btn btn-sm btn-secondary" title="Search in JSON">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                        <div class="json-viewer-info">
+                            <span id="jsonSize" class="text-sm text-gray-500"></span>
+                        </div>
+                    </div>
+                    <div class="json-search-container hidden" id="jsonSearchContainer">
+                        <div class="json-search-input">
+                            <input type="text" id="jsonSearchInput" placeholder="Search in JSON..." class="form-input">
+                            <div class="json-search-controls">
+                                <button id="jsonSearchPrev" class="btn btn-xs btn-secondary" title="Previous match">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                                <button id="jsonSearchNext" class="btn btn-xs btn-secondary" title="Next match">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <span id="jsonSearchResults" class="text-xs text-gray-500"></span>
+                                <button id="closeJsonSearch" class="btn btn-xs btn-secondary" title="Close search">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="json-viewer-content">
+                        <pre id="jsonViewer" class="line-numbers language-json"><code id="jsonCode"></code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-download"></i> Export Data</h2>
+                <button id="closeExportModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <div class="form-group">
+                        <label>Export Format:</label>
+                        <div class="format-options">
+                            <label class="radio-option">
+                                <input type="radio" name="exportFormat" value="json" checked>
+                                <span><i class="fas fa-file-code"></i> JSON</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="exportFormat" value="csv">
+                                <span><i class="fas fa-file-csv"></i> CSV</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Export Scope:</label>
+                        <div class="scope-options">
+                            <label class="radio-option">
+                                <input type="radio" name="exportScope" value="current" checked>
+                                <span>Current Collection Only</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="exportScope" value="all">
+                                <span>All Collections</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group" id="collectionSelectGroup" style="display: none;">
+                        <label>Select Collections:</label>
+                        <div id="collectionsList" class="collections-checkbox">
+                            <!-- Collections will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="startExportBtn" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Start Export
+                </button>
+                <button id="cancelExportBtn" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification hidden">
+        <span id="notificationText"></span>
+        <button id="closeNotification" class="close-btn">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
