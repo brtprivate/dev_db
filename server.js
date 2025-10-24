@@ -1,12 +1,10 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const { MongoClient } = require('mongodb');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
 const path = require('path');
 
 const app = express();
@@ -19,14 +17,12 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// Session configuration
+// Session configuration (using memory store to avoid early MongoDB connection)
 app.use(session({
   secret: JWT_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/mongodb-gui'
-  }),
+  // Removed MongoStore to avoid early MongoDB connection
   cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
 }));
 
@@ -313,6 +309,7 @@ app.get("/health",(req,res)=>{
 app.listen(PORT, () => {
   console.log(`MongoDB Web GUI server running on http://localhost:${PORT}`);
   console.log('Default login: admin / admin');
+  console.log('Server started successfully - MongoDB connection will be established after user login');
 });
 
 // Graceful shutdown

@@ -634,7 +634,7 @@ function displayDocuments(documents) {
         row.style.borderBottom = '1px solid #e5e7eb';
 
         const jsonCell = document.createElement('td');
-        jsonCell.style.padding = 'var(--space-4)';
+        jsonCell.style.padding = '1rem';
         jsonCell.style.verticalAlign = 'top';
         jsonCell.style.width = '70%';
 
@@ -660,15 +660,17 @@ function displayDocuments(documents) {
         `;
 
         const actionsCell = document.createElement('td');
-        actionsCell.style.padding = 'var(--space-4)';
+        actionsCell.style.padding = '1rem';
         actionsCell.style.verticalAlign = 'top';
         actionsCell.style.width = '30%';
+
+        // Create buttons with proper event listeners instead of inline onclick
         actionsCell.innerHTML = `
             <div class="document-actions">
-                <button class="btn btn-sm btn-primary" onclick="viewDocumentModal(${index}, ${JSON.stringify(doc).replace(/"/g, '&quot;')})">
+                <button class="btn btn-sm btn-primary view-doc-btn" data-index="${index}">
                     <i class="fas fa-eye"></i> View Full
                 </button>
-                <button class="btn btn-sm btn-secondary" onclick="copyDocumentJson(${JSON.stringify(doc).replace(/"/g, '&quot;')})">
+                <button class="btn btn-sm btn-secondary copy-doc-btn" data-index="${index}">
                     <i class="fas fa-copy"></i> Copy JSON
                 </button>
                 <span class="read-only-text" style="display: block; margin-top: 8px; font-size: 0.75rem; color: #6b7280;">
@@ -676,6 +678,13 @@ function displayDocuments(documents) {
                 </span>
             </div>
         `;
+
+        // Add event listeners to the buttons
+        const viewBtn = actionsCell.querySelector('.view-doc-btn');
+        const copyBtn = actionsCell.querySelector('.copy-doc-btn');
+
+        viewBtn.addEventListener('click', () => viewDocumentModal(index, doc));
+        copyBtn.addEventListener('click', () => copyDocumentJson(doc));
 
         row.appendChild(jsonCell);
         row.appendChild(actionsCell);
@@ -688,13 +697,13 @@ function displayDocuments(documents) {
 // JSON syntax highlighting function
 function highlightJson(jsonString) {
     return jsonString
-        .replace(/(".*?")\s*:/g, '<span style="color: #059669; font-weight: 700; font-size: 0.95rem;">$1</span>:')
-        .replace(/:\s*(".*?")/g, ': <span style="color: #dc2626; font-weight: 600; font-size: 0.95rem;">$1</span>')
-        .replace(/:\s*(\d+\.?\d*)/g, ': <span style="color: #2563eb; font-weight: 700; font-size: 0.95rem;">$1</span>')
-        .replace(/:\s*(true|false)/g, ': <span style="color: #7c3aed; font-weight: 700; font-size: 0.95rem;">$1</span>')
-        .replace(/:\s*(null)/g, ': <span style="color: #6b7280; font-style: italic; font-weight: 600; font-size: 0.95rem;">$1</span>')
-        .replace(/(\{|\})/g, '<span style="color: #000000; font-weight: 800; font-size: 1rem;">$1</span>')
-        .replace(/(\[|\])/g, '<span style="color: #000000; font-weight: 800; font-size: 1rem;">$1</span>');
+        .replace(/(".*?")\s*:/g, '<span style="color: #0d9488; font-weight: 600;">$1</span>:')
+        .replace(/:\s*(".*?")/g, ': <span style="color: #dc2626; font-weight: 500;">$1</span>')
+        .replace(/:\s*(\d+\.?\d*)/g, ': <span style="color: #2563eb; font-weight: 600;">$1</span>')
+        .replace(/:\s*(true|false)/g, ': <span style="color: #7c3aed; font-weight: 600;">$1</span>')
+        .replace(/:\s*(null)/g, ': <span style="color: #6b7280; font-style: italic; font-weight: 500;">$1</span>')
+        .replace(/(\{|\})/g, '<span style="color: #374151; font-weight: 700;">$1</span>')
+        .replace(/(\[|\])/g, '<span style="color: #374151; font-weight: 700;">$1</span>');
 }
 
 // Toggle document expansion
