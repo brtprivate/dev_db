@@ -57,24 +57,41 @@ jobs:
           # Configure Git safe directory
           git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
           
-          # Ensure remote is correct
-          git remote set-url origin https://github.com/brtprivate/dev_db.git
+          # Set repository URL
+          REPO_URL="https://github.com/brtprivate/dev_db.git"
+          git remote set-url origin "$REPO_URL"
+          
+          # Stash any local changes
+          echo "Stashing any local changes..."
+          git stash 2>/dev/null || echo "No changes to stash"
+          
+          # Reset to clean state
+          echo "Resetting to clean state..."
+          git reset --hard HEAD
+          
+          # Clean untracked files
+          echo "Cleaning untracked files..."
+          git clean -fd
           
           # Fetch latest changes
           echo "Fetching latest changes from origin..."
           git fetch origin
           
+          # Get current branch name
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          echo "Current branch: $CURRENT_BRANCH"
+          
           # Check available branches
           echo "Available remote branches:"
           git branch -r
           
-          # Pull from master branch
-          echo "Pulling from master branch..."
-          if git pull origin master; then
+          # Pull from current branch
+          echo "Pulling from $CURRENT_BRANCH branch..."
+          if git pull origin "$CURRENT_BRANCH"; then
             echo "Git pull successful!"
           else
-            echo "Git pull failed. Trying hard reset..."
-            git reset --hard origin/master
+            echo "Git pull failed. Trying hard reset to origin/$CURRENT_BRANCH..."
+            git reset --hard "origin/$CURRENT_BRANCH"
             echo "Hard reset completed!"
           fi
           
