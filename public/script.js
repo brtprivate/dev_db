@@ -9,9 +9,23 @@ let cachedCredentials = null;
 
 // Connection help toggle function
 function toggleConnectionHelp() {
-    const helpContent = document.getElementById('connectionHelp');
-    if (helpContent) {
-        helpContent.classList.toggle('hidden');
+    const helpTooltip = document.querySelector('.help-tooltip');
+    if (helpTooltip) {
+        helpTooltip.classList.toggle('hidden');
+    }
+}
+
+// Password toggle function
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const toggleButton = document.querySelector('.password-toggle i');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleButton.className = 'fas fa-eye-slash';
+    } else {
+        passwordInput.type = 'password';
+        toggleButton.className = 'fas fa-eye';
     }
 }
 

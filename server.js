@@ -59,7 +59,7 @@ app.post('/api/login', async (req, res) => {
       const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h' });
       
       // Store connection string in session
-      req.session.connectionString = connectionString || 'mongodb://localhost:27017';
+      req.session.connectionString = connectionString || 'mongodb://192.168.31.4:27017';
       
       res.json({ 
         success: true, 
@@ -308,7 +308,7 @@ app.get("/health",(req,res)=>{
 // Start server
 app.listen(PORT, () => {
   console.log(`MongoDB Web GUI server running on http://localhost:${PORT}`);
-  console.log('Default login: admin / admin');
+  console.log('Default login...: admin / admin');
   console.log('Server started successfully - MongoDB connection will be established after user login');
 });
 
