@@ -2,7 +2,10 @@ name: Deploy to Dev Server
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev main master ]
+  pull_request:
+    types: [closed]
+    branches: [ main master ]
   workflow_dispatch: # Allows manual triggering
 
 jobs:
@@ -25,13 +28,13 @@ jobs:
           git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
            git config --global --add safe.directory /www/wwwroot/other/dev_db_mongoweb
           # Try to pull with error handling
-          if git pull origin dev 2>/dev/null; then
+          if git pull origin master 2>/dev/null; then
             echo "Git pull successful"
           else
             echo "Git pull had issues, but continuing..."
             # Try alternative approach
-            git fetch origin dev 2>/dev/null || true
-            git checkout dev 2>/dev/null || true
+            git fetch origin master 2>/dev/null || true
+            git checkout master 2>/dev/null || true
           fi
           
           # Optional: Install dependencies if package.json changed
