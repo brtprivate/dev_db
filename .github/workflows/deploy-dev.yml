@@ -23,7 +23,7 @@ jobs:
           
           # Fix Git permissions without sudo
           git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
-          
+           git config --global --add safe.directory /www/wwwroot/other/dev_db_mongoweb
           # Try to pull with error handling
           if git pull origin dev 2>/dev/null; then
             echo "Git pull successful"
