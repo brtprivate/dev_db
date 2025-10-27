@@ -21,8 +21,7 @@ jobs:
           # Navigate to your project directory
           cd ${{ secrets.PROJECT_PATH }}
           
-          # Fix Git ownership and permissions
-          sudo chown -R $USER:$USER .git
+          # Fix Git permissions without sudo
           git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
           
           # Pull latest changes from dev branch
