@@ -1,4 +1,4 @@
-name: Deploy to Dev Server
+name: Deploy to Dev Server (Alternative - No Sudo)
 
 on:
   push:
@@ -21,18 +21,19 @@ jobs:
           # Navigate to your project directory
           cd ${{ secrets.PROJECT_PATH }}
           
-          # Fix Git ownership and permissions
-          sudo chown -R $USER:$USER .git
+          # Alternative: Reset Git state without sudo
           git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
+          
+          # Force reset to avoid permission issues
+          git reset --hard HEAD
+          git clean -fd
           
           # Pull latest changes from dev branch
           git pull origin dev
           
           # Optional: Install dependencies if package.json changed
-          # Check if dependencies changed (safer approach)
           if [ -f "pnpm-lock.yaml" ] && [ -f "package.json" ]; then
             echo "Checking for dependency changes..."
-            # Simple check: if lock file is newer than last install
             if [ ! -d "node_modules" ] || [ "pnpm-lock.yaml" -nt "node_modules" ]; then
               echo "Dependencies changed or missing, installing..."
               pnpm install

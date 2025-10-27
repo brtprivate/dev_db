@@ -68,7 +68,8 @@ jobs:
         script: |
           cd ${{ secrets.PROJECT_PATH }}
           
-          # Fix Git ownership issue
+          # Fix Git ownership and permissions (requires sudo)
+          sudo chown -R $USER:$USER .git
           git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
           
           git pull origin dev
