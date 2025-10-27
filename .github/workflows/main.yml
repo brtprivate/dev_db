@@ -2,10 +2,10 @@ name: Deploy to Server
 
 on:
   push:
-    branches: [ dev, main, master ]
+    branches: [dev, main, master]
   pull_request:
     types: [closed]
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Deploy to server (with Git fix)
+    - name: Deploy via SSH
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
@@ -21,183 +21,43 @@ jobs:
         password: ${{ secrets.SERVER_PASSWORD }}
         port: ${{ secrets.SERVER_PORT }}
         script: |
-          cd ${{ secrets.PROJECT_PATH }}
-          echo "Current directory: $(pwd)"
-          
-          # Fix Git permissions properly
-          echo "Fixing Git directory permissions..."
-          
-          # Check current user and permissions
-          echo "Current user: $(whoami)"
-          echo "Current directory permissions:"
-          ls -la .git/ 2>/dev/null || echo "No .git directory found"
-          
-          # Fix ownership and permissions - handle mixed ownership
-          echo "Fixing mixed ownership in .git directory..."
-          
-          # Try to fix ownership with sudo first
-          sudo chown -R $(whoami):$(whoami) .git/ 2>/dev/null || echo "sudo chown failed"
-          
-          # If sudo fails, try to fix specific root-owned files
-          sudo chown $(whoami):$(whoami) .git/config .git/index .git/packed-refs .git/ORIG_HEAD 2>/dev/null || echo "Could not fix specific files"
-          
-          # Set proper permissions
-          sudo chmod -R 755 .git/ 2>/dev/null || echo "sudo chmod failed"
-          
-          # Alternative: Remove problematic files and let Git recreate them
-          echo "Removing problematic Git files to force recreation..."
-          sudo rm -f .git/config .git/index .git/packed-refs .git/ORIG_HEAD .git/index.lock 2>/dev/null || true
-          rm -f .git/config .git/index .git/packed-refs .git/ORIG_HEAD .git/index.lock 2>/dev/null || true
-          
-          # Test if Git is working now - if not, use fresh clone
-          if ! git status >/dev/null 2>&1; then
-            echo "Git still not working. Using fresh clone approach..."
-            
-            # Since sudo is not available, use fresh clone method
+          echo "🚀 Starting deployment..."
+          cd ${{ secrets.PROJECT_PATH }} || { echo "❌ Invalid project path"; exit 1; }
+
+          echo "📂 Current directory: $(pwd)"
+          echo "👤 Current user: $(whoami)"
+
+          # Make sure the git repo is valid
+          if [ ! -d ".git" ]; then
+            echo "❌ No .git directory found. Cloning fresh repository..."
             cd ..
-            TEMP_DIR="temp_deploy_$(date +%s)"
-            
-            echo "Cloning fresh repository to $TEMP_DIR..."
-            git clone https://github.com/brtprivate/dev_db.git "$TEMP_DIR"
-            
-            if [ -d "$TEMP_DIR" ]; then
-              echo "Fresh clone successful. Preserving important files..."
-              
-              # Backup important files that should be preserved
-              BACKUP_DIR="backup_$(date +%Y%m%d_%H%M%S)"
-              mkdir -p "$BACKUP_DIR"
-              
-              # Preserve environment files and configs
-              cp .env* "$BACKUP_DIR/" 2>/dev/null || echo "No .env files found"
-              cp config/* "$BACKUP_DIR/" 2>/dev/null || echo "No config files to preserve"
-              cp package*.json "$BACKUP_DIR/" 2>/dev/null || echo "No package files to preserve"
-              cp *.log "$BACKUP_DIR/" 2>/dev/null || echo "No log files to preserve"
-              cp -r uploads "$BACKUP_DIR/" 2>/dev/null || echo "No uploads directory to preserve"
-              cp -r data "$BACKUP_DIR/" 2>/dev/null || echo "No data directory to preserve"
-              
-              # Backup current directory
-              mv "$(basename ${{ secrets.PROJECT_PATH }})" "old_$(basename ${{ secrets.PROJECT_PATH }})_$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
-              
-              # Move fresh clone to project directory
-              mv "$TEMP_DIR" "$(basename ${{ secrets.PROJECT_PATH }})"
-              
-              # Return to project directory
-              cd "$(basename ${{ secrets.PROJECT_PATH }})"
-              
-              # Restore important files
-              echo "Restoring important files..."
-              cp "$BACKUP_DIR"/.env* . 2>/dev/null || echo "No .env files to restore"
-              cp "$BACKUP_DIR"/*.json . 2>/dev/null || echo "No JSON files to restore"
-              cp "$BACKUP_DIR"/*.log . 2>/dev/null || echo "No log files to restore"
-              cp -r "$BACKUP_DIR"/uploads . 2>/dev/null || echo "No uploads to restore"
-              cp -r "$BACKUP_DIR"/data . 2>/dev/null || echo "No data to restore"
-              
-              # Clean up backup directory
-              rm -rf "$BACKUP_DIR"
-              
-              echo "Fresh clone deployment with file preservation completed!"
-            else
-              echo "Fresh clone failed. Returning to original directory..."
-              cd "$(basename ${{ secrets.PROJECT_PATH }})"
-            fi
+            git clone https://github.com/brtprivate/dev_db.git "$(basename ${{ secrets.PROJECT_PATH }})"
+            cd "$(basename ${{ secrets.PROJECT_PATH }})"
           fi
-          
-          # Configure Git safe directory
+
+          # Configure git safety and remote URL
           git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
-          
-          # Set repository URL
-          REPO_URL="https://github.com/brtprivate/dev_db.git"
-          git remote set-url origin "$REPO_URL"
-          
-          # Stash any local changes
-          echo "Stashing any local changes..."
-          git stash 2>/dev/null || echo "No changes to stash"
-          
-          # Reset to clean state
-          echo "Resetting to clean state..."
+          git remote remove origin 2>/dev/null || true
+          git remote add origin https://github.com/brtprivate/dev_db.git
+
+          echo "🧹 Cleaning workspace..."
           git reset --hard HEAD
-          
-          # Clean untracked files
-          echo "Cleaning untracked files..."
           git clean -fd
-          
-          # Fetch latest changes
-          echo "Fetching latest changes from origin..."
-          git fetch origin
-          
-          # Get current branch name
-          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          echo "Current branch: $CURRENT_BRANCH"
-          
-          # Check available branches
-          echo "Available remote branches:"
-          git branch -r
-          
-          # Pull from current branch
-          echo "Pulling from $CURRENT_BRANCH branch..."
-          if git pull origin "$CURRENT_BRANCH"; then
-            echo "Git pull successful!"
-          else
-            echo "Git pull failed. Trying hard reset to origin/$CURRENT_BRANCH..."
-            if git reset --hard "origin/$CURRENT_BRANCH"; then
-              echo "Hard reset completed!"
-            else
-              echo "Hard reset also failed. Using fresh clone approach..."
-              
-              # Use fresh clone method as last resort
-              cd ..
-              TEMP_DIR="temp_deploy_$(date +%s)"
-              
-              echo "Cloning fresh repository to $TEMP_DIR..."
-              git clone https://github.com/brtprivate/dev_db.git "$TEMP_DIR"
-              
-              if [ -d "$TEMP_DIR" ]; then
-                echo "Fresh clone successful. Preserving important files..."
-                
-                # Backup important files that should be preserved
-                BACKUP_DIR="backup_$(date +%Y%m%d_%H%M%S)"
-                mkdir -p "$BACKUP_DIR"
-                
-                # Preserve environment files and configs
-                cp .env* "$BACKUP_DIR/" 2>/dev/null || echo "No .env files found"
-                cp config/* "$BACKUP_DIR/" 2>/dev/null || echo "No config files to preserve"
-                cp package*.json "$BACKUP_DIR/" 2>/dev/null || echo "No package files to preserve"
-                cp *.log "$BACKUP_DIR/" 2>/dev/null || echo "No log files to preserve"
-                cp -r uploads "$BACKUP_DIR/" 2>/dev/null || echo "No uploads directory to preserve"
-                cp -r data "$BACKUP_DIR/" 2>/dev/null || echo "No data directory to preserve"
-                
-                # Backup current directory
-                mv "$(basename ${{ secrets.PROJECT_PATH }})" "old_$(basename ${{ secrets.PROJECT_PATH }})_$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
-                
-                # Move fresh clone to project directory
-                mv "$TEMP_DIR" "$(basename ${{ secrets.PROJECT_PATH }})"
-                
-                # Return to project directory
-                cd "$(basename ${{ secrets.PROJECT_PATH }})"
-                
-                # Restore important files
-                echo "Restoring important files..."
-                cp "$BACKUP_DIR"/.env* . 2>/dev/null || echo "No .env files to restore"
-                cp "$BACKUP_DIR"/*.json . 2>/dev/null || echo "No JSON files to restore"
-                cp "$BACKUP_DIR"/*.log . 2>/dev/null || echo "No log files to restore"
-                cp -r "$BACKUP_DIR"/uploads . 2>/dev/null || echo "No uploads to restore"
-                cp -r "$BACKUP_DIR"/data . 2>/dev/null || echo "No data to restore"
-                
-                # Clean up backup directory
-                rm -rf "$BACKUP_DIR"
-                
-                echo "Fresh clone deployment with file preservation completed!"
-              else
-                echo "Fresh clone failed. Returning to original directory..."
-                cd "$(basename ${{ secrets.PROJECT_PATH }})"
-              fi
-            fi
-          fi
-          
-          # Verify the pull worked
-          echo "Current branch status:"
-          git status
-          echo "Latest commit:"
-          git log --oneline -1
-          
-          echo "Deployment completed successfully!"
+
+          echo "🌿 Fetching and pulling latest changes..."
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD || echo "master")
+          git fetch origin $CURRENT_BRANCH || { echo "❌ Fetch failed"; exit 1; }
+          git checkout $CURRENT_BRANCH || git checkout -b $CURRENT_BRANCH origin/$CURRENT_BRANCH
+          git pull origin $CURRENT_BRANCH || { echo "❌ Pull failed"; exit 1; }
+
+          echo "✅ Git pull successful."
+          echo "🧩 Latest commit:"
+          git log -1 --oneline
+
+          echo "⚙️ Running post-deploy steps..."
+          # Example: npm install && npm run build
+          # Uncomment if needed:
+          # npm ci --omit=dev
+          # npm run build
+
+          echo "✅ Deployment completed successfully!"
