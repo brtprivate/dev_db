@@ -24,18 +24,39 @@ jobs:
           # Navigate to your project directory
           cd ${{ secrets.PROJECT_PATH }}
           
+          # Debug: Show current directory and git status
+          echo "Current directory: $(pwd)"
+          echo "Git status:"
+          git status
+          echo "Git remote:"
+          git remote -v
+          echo "Current branch:"
+          git branch
+          
           # Fix Git permissions without sudo
           git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
-           git config --global --add safe.directory /www/wwwroot/other/dev_db_mongoweb
-          # Try to pull with error handling
-          if git pull origin master 2>/dev/null; then
+          git config --global --add safe.directory /www/wwwroot/other/dev_db_mongoweb
+          
+          # Try to pull with detailed error output
+          echo "Attempting git pull from master..."
+          if git pull origin master; then
             echo "Git pull successful"
           else
-            echo "Git pull had issues, trying alternative..."
-            # Try alternative approach
-            git fetch origin master 2>/dev/null || true
-            git reset --hard origin/master 2>/dev/null || true
+            echo "Git pull failed with error: $?"
+            echo "Trying alternative approach..."
+            # Try alternative approach with detailed output
+            echo "Fetching from origin master..."
+            git fetch origin master
+            echo "Resetting to origin/master..."
+            git reset --hard origin/master
+            echo "Alternative approach completed"
           fi
+          
+          # Show final git status
+          echo "Final git status:"
+          git status
+          echo "Current commit:"
+          git log --oneline -1
           
           # Optional: Install dependencies if package.json changed
           # Check if dependencies changed (safer approach)
