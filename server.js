@@ -309,7 +309,7 @@ app.get("/health",(req,res)=>{
 app.listen(PORT, () => {
   console.log(`MongoDB Web GUI server running on http://localhost:${PORT}`);
   console.log('Default login...: admin / admin');
-  console.log('Ci/cd added wroking......');
+  console.log('Ci/cd ..');
   console.log('Server started successfully - MongoDB connection will be established after user login');
 });
 

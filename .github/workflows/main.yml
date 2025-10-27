@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Deploy to server
+    - name: Deploy to server (with Git fix)
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
@@ -24,47 +24,64 @@ jobs:
           cd ${{ secrets.PROJECT_PATH }}
           echo "Current directory: $(pwd)"
           
-          # Fix Git directory permissions
+          # Fix Git permissions properly
           echo "Fixing Git directory permissions..."
-          sudo chown -R $(whoami):$(whoami) .git/ 2>/dev/null || true
-          chmod -R 755 .git/ 2>/dev/null || true
+          
+          # Check current user and permissions
+          echo "Current user: $(whoami)"
+          echo "Current directory permissions:"
+          ls -la .git/ 2>/dev/null || echo "No .git directory found"
+          
+          # Fix ownership and permissions
+          sudo chown -R $(whoami):$(whoami) .git/ 2>/dev/null || echo "sudo chown failed, trying without sudo"
+          chown -R $(whoami):$(whoami) .git/ 2>/dev/null || echo "chown failed"
+          
+          sudo chmod -R 755 .git/ 2>/dev/null || echo "sudo chmod failed, trying without sudo"
+          chmod -R 755 .git/ 2>/dev/null || echo "chmod failed"
+          
+          # Test if Git is working now
+          if ! git status >/dev/null 2>&1; then
+            echo "Git still not working. Recreating Git repository..."
+            # Backup current .git
+            mv .git .git.broken 2>/dev/null || true
+            
+            # Initialize fresh Git repository
+            git init
+            git remote add origin https://github.com/brtprivate/dev_db.git
+            
+            # Set up Git configuration
+            git config user.name "Deployment Bot"
+            git config user.email "deploy@example.com"
+          fi
           
           # Configure Git safe directory
           git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
           
-          # Check if this is a Git repository
-          if [ ! -d ".git" ]; then
-            echo "Not a Git repository. Initializing..."
-            git init
-            git remote add origin https://github.com/brtprivate/dev_db.git
-          fi
-          
-          # Ensure remote is configured correctly
+          # Ensure remote is correct
           git remote set-url origin https://github.com/brtprivate/dev_db.git
           
-          # Fetch all references first
-          echo "Fetching latest changes..."
+          # Fetch latest changes
+          echo "Fetching latest changes from origin..."
           git fetch origin
           
-          # Check if master branch exists remotely
-          if git ls-remote --heads origin master | grep -q master; then
-            echo "Master branch found. Attempting pull..."
-            if git pull origin master; then
-              echo "Git pull successful"
-            else
-              echo "Git pull failed. Trying reset..."
-              git reset --hard origin/master
-            fi
+          # Check available branches
+          echo "Available remote branches:"
+          git branch -r
+          
+          # Pull from master branch
+          echo "Pulling from master branch..."
+          if git pull origin master; then
+            echo "Git pull successful!"
           else
-            echo "Master branch not found. Checking available branches..."
-            git ls-remote --heads origin
-            echo "Trying to pull from main branch instead..."
-            if git pull origin main; then
-              echo "Git pull from main successful"
-            else
-              echo "No suitable branch found for deployment"
-              exit 1
-            fi
+            echo "Git pull failed. Trying hard reset..."
+            git reset --hard origin/master
+            echo "Hard reset completed!"
           fi
+          
+          # Verify the pull worked
+          echo "Current branch status:"
+          git status
+          echo "Latest commit:"
+          git log --oneline -1
           
           echo "Deployment completed successfully!"
