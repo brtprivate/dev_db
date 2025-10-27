@@ -32,18 +32,32 @@ jobs:
           echo "Current directory permissions:"
           ls -la .git/ 2>/dev/null || echo "No .git directory found"
           
-          # Fix ownership and permissions
-          sudo chown -R $(whoami):$(whoami) .git/ 2>/dev/null || echo "sudo chown failed, trying without sudo"
-          chown -R $(whoami):$(whoami) .git/ 2>/dev/null || echo "chown failed"
+          # Fix ownership and permissions - handle mixed ownership
+          echo "Fixing mixed ownership in .git directory..."
           
-          sudo chmod -R 755 .git/ 2>/dev/null || echo "sudo chmod failed, trying without sudo"
-          chmod -R 755 .git/ 2>/dev/null || echo "chmod failed"
+          # Try to fix ownership with sudo first
+          sudo chown -R $(whoami):$(whoami) .git/ 2>/dev/null || echo "sudo chown failed"
+          
+          # If sudo fails, try to fix specific root-owned files
+          sudo chown $(whoami):$(whoami) .git/config .git/index .git/packed-refs .git/ORIG_HEAD 2>/dev/null || echo "Could not fix specific files"
+          
+          # Set proper permissions
+          sudo chmod -R 755 .git/ 2>/dev/null || echo "sudo chmod failed"
+          
+          # Alternative: Remove problematic files and let Git recreate them
+          echo "Removing problematic Git files to force recreation..."
+          sudo rm -f .git/config .git/index .git/packed-refs .git/ORIG_HEAD .git/index.lock 2>/dev/null || true
+          rm -f .git/config .git/index .git/packed-refs .git/ORIG_HEAD .git/index.lock 2>/dev/null || true
           
           # Test if Git is working now
           if ! git status >/dev/null 2>&1; then
             echo "Git still not working. Recreating Git repository..."
-            # Backup current .git
-            mv .git .git.broken 2>/dev/null || true
+            
+            # Try to backup current .git with sudo if needed
+            sudo mv .git .git.broken 2>/dev/null || mv .git .git.broken 2>/dev/null || true
+            
+            # Remove any remaining .git files
+            sudo rm -rf .git 2>/dev/null || rm -rf .git 2>/dev/null || true
             
             # Initialize fresh Git repository
             git init
@@ -52,6 +66,9 @@ jobs:
             # Set up Git configuration
             git config user.name "Deployment Bot"
             git config user.email "deploy@example.com"
+            
+            # Ensure proper ownership of new .git directory
+            sudo chown -R $(whoami):$(whoami) .git/ 2>/dev/null || true
           fi
           
           # Configure Git safe directory
