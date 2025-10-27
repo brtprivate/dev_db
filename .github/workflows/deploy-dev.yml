@@ -31,10 +31,10 @@ jobs:
           if git pull origin master 2>/dev/null; then
             echo "Git pull successful"
           else
-            echo "Git pull had issues, but continuing..."
+            echo "Git pull had issues, trying alternative..."
             # Try alternative approach
             git fetch origin master 2>/dev/null || true
-            git checkout master 2>/dev/null || true
+            git reset --hard origin/master 2>/dev/null || true
           fi
           
           # Optional: Install dependencies if package.json changed
