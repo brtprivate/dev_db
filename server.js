@@ -59,7 +59,7 @@ app.post('/api/login', async (req, res) => {
       const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h' });
       
       // Store connection string in session
-      req.session.connectionString = connectionString || 'mongodb://localhost:27017';
+      req.session.connectionString = connectionString || 'mongodb://192.168.31.4:27017';
       
       res.json({ 
         success: true, 
