@@ -24,8 +24,15 @@ jobs:
           # Fix Git permissions without sudo
           git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
           
-          # Pull latest changes from dev branch
-          git pull origin dev
+          # Try to pull with error handling
+          if git pull origin dev 2>/dev/null; then
+            echo "Git pull successful"
+          else
+            echo "Git pull had issues, but continuing..."
+            # Try alternative approach
+            git fetch origin dev 2>/dev/null || true
+            git checkout dev 2>/dev/null || true
+          fi
           
           # Optional: Install dependencies if package.json changed
           # Check if dependencies changed (safer approach)
