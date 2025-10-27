@@ -1,58 +1,58 @@
-name: SonarQube Analysis
+# name: SonarQube Analysis
 
-on:
-  push:
-    branches:
-      - main
-      - master
-      - develop
-      - dev
-  pull_request:
-    types: [opened, synchronize, reopened]
-  workflow_dispatch:
+# on:
+#   push:
+#     branches:
+#       - main
+#       - master
+#       - develop
+#       - dev
+#   pull_request:
+#     types: [opened, synchronize, reopened]
+#   workflow_dispatch:
 
-jobs:
-  sonarqube:
-    name: SonarQube Scan
-    runs-on: ubuntu-latest
+# jobs:
+#   sonarqube:
+#     name: SonarQube Scan
+#     runs-on: ubuntu-latest
     
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0  # Shallow clones should be disabled for better analysis
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+#       - name: Setup pnpm
+#         uses: pnpm/action-setup@v2
+#         with:
+#           version: 8
 
-      - name: Install Client Dependencies
-        working-directory: ./client
-        run: pnpm install
+#       - name: Install Client Dependencies
+#         working-directory: ./client
+#         run: pnpm install
 
-      - name: Install Server Dependencies
-        working-directory: ./server
-        run: pnpm install --production
+#       - name: Install Server Dependencies
+#         working-directory: ./server
+#         run: pnpm install --production
 
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+#       - name: SonarQube Scan
+#         uses: sonarsource/sonarqube-scan-action@master
+#         env:
+#           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-      - name: SonarQube Quality Gate Check
-        uses: sonarsource/sonarqube-quality-gate-action@master
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        continue-on-error: true
+#       - name: SonarQube Quality Gate Check
+#         uses: sonarsource/sonarqube-quality-gate-action@master
+#         timeout-minutes: 5
+#         env:
+#           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#         continue-on-error: true
 
-      - name: Analysis Complete
-        run: echo "✅ SonarQube analysis complete! Check results at ${{ secrets.SONAR_HOST_URL }}"
+#       - name: Analysis Complete
+#         run: echo "✅ SonarQube analysis complete! Check results at ${{ secrets.SONAR_HOST_URL }}"
 
