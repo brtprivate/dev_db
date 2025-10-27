@@ -1,4 +1,4 @@
-name: SonarQube Analysis
+name: SonarQube Analysis (with pnpm)
 
 on:
   push:
@@ -15,16 +15,21 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Shallow clones should be disabled for better analysis
+        fetch-depth: 0
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: latest
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
+        cache: 'pnpm'
 
     - name: Install dependencies
-      run: npm install
+      run: pnpm install
 
     - name: Run SonarQube Scanner
       uses: sonarqube-quality-gate-action@v1.0.1

@@ -67,11 +67,21 @@ jobs:
         port: ${{ secrets.SERVER_PORT }}
         script: |
           cd ${{ secrets.PROJECT_PATH }}
+          
+          # Fix Git ownership issue
+          git config --global --add safe.directory ${{ secrets.PROJECT_PATH }}
+          
           git pull origin dev
           
-          if git diff HEAD~1 HEAD --name-only | grep -q "package.json\|package-lock.json\|pnpm-lock.yaml"; then
-            echo "Dependencies changed, installing..."
-            pnpm install
+          # Safer dependency check
+          if [ -f "pnpm-lock.yaml" ] && [ -f "package.json" ]; then
+            echo "Checking for dependency changes..."
+            if [ ! -d "node_modules" ] || [ "pnpm-lock.yaml" -nt "node_modules" ]; then
+              echo "Dependencies changed or missing, installing..."
+              pnpm install
+            else
+              echo "Dependencies up to date"
+            fi
           fi
           
           echo "Deployment completed successfully!"

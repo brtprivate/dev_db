@@ -5,6 +5,7 @@ const ConnectionService = require('./ConnectionService');
 /**
  * Service factory and integration module
  */
+
 class ServiceManager {
     constructor() {
         this.authService = new AuthService();
